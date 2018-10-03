@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+	
+    <groupId>com.github.chibyhq</groupId>
+    <artifactId>atmoserial-springboot-sample</artifactId>
+    <version>0.1-SNAPSHOT</version>
+	
+    <packaging>jar</packaging>
+    <name>Atmoserial Spring Boot sample</name>
+    <description>${project.name} - Websocket to Serial port bridge</description>
+    
+    <parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.0.5.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	
+    <organization>
+        <name>CERN Micro Club</name>
+        <url>http://cern.ch/cmc</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>GPLv3</name>
+            <url>https://opensource.org/licenses/GPL-3.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+    </properties>
+	
+    
+    <dependencies>
+       <dependency>
+            <groupId>com.github.chibyhq</groupId>
+            <artifactId>atmoserial</artifactId>
+            <version>${project.version}</version>
+       </dependency>
+       
+       
+       <dependency>
+	     <groupId>org.springframework.boot</groupId>
+	     <artifactId>spring-boot-starter-test</artifactId>
+	     <scope>test</scope>
+	   </dependency>
+	   <dependency>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-web</artifactId>
+	   </dependency>
+
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+	
+        </plugins>
+    </build>
+
+</project>
