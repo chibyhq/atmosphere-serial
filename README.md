@@ -1,6 +1,6 @@
-# Atmosphere Serial
+# Atmosphere Serial (a.k.a atmoserial)
 
-A Java "Websocket to Serial port" bridge using Atmosphere and jSerialComm.
+Atmoserial is a Java "Websocket to Serial port" bridge using Atmosphere and jSerialComm.
 It features a small REST API to open/close serial ports and accept incoming messages, and uses atmosphere to broadcast serial port output.
 
 ## How to use it ?
