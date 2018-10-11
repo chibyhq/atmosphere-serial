@@ -1,0 +1,40 @@
+<html>
+<head>
+<title>Atmoserial sample test page</title>
+<script src="../webjars/atmosphere-javascript/atmosphere.js"></script>
+</head>
+<body>
+<h1>Testing Atmoserial</h1>
+<script>
+  var socket = atmosphere;
+  var request = new atmosphere.AtmosphereRequest();
+  request.url = "/atmoserial/ttyACM0?baudRate=9600";
+  //request.url = "/atmoserial/ListAllPorts";
+  request.contentType = "application/json";
+  request.transport = 'websocket';
+  request.fallbackTransport = 'long-polling';
+  request.onOpen = function(response){
+    console.log('Atmosphere connected using ' + response.transport);
+    subSocket.push("go");
+  };
+  request.onMessage = function (response) {
+        console.log('Atmosphere received : '+response.responseBody);
+        try {
+            var json = JSON.parse(response.responseBody);
+            console.log('JSON message : ',json);
+        } catch (e) {
+            console.log('Error: ', response.responseBody);
+            return;
+        }
+
+    };
+
+    request.onError = function(response) {
+        console.log('Atmosphere error :', response.responseBody);
+    };
+    
+    var subSocket = socket.subscribe(request);
+    
+</script>
+</body>
+</html>

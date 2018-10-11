@@ -1,14 +1,18 @@
 package org.github.chibyhq.atmoserial;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import javax.inject.Inject;
 
-import org.atmosphere.config.service.Get;
 import org.atmosphere.config.service.ManagedService;
 import org.atmosphere.config.service.Post;
+import org.atmosphere.config.service.Put;
+import org.atmosphere.config.service.Ready;
 import org.atmosphere.cpr.AtmosphereResource;
 import org.atmosphere.cpr.Broadcaster;
 import org.atmosphere.cpr.BroadcasterFactory;
@@ -20,12 +24,17 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 
+import lombok.extern.java.Log;
+
 @ManagedService(path = "/atmoserial/{portDescriptor: [a-zA-Z][a-zA-Z_0-9]*}")
+@Log
 public class AtmoserialService implements BroadcasterLifeCyclePolicyListener, SerialPortDataListener {
 
     ObjectMapper objectMapper = new ObjectMapper();
 
     SerialPort broadcastedPort;
+
+    final public String LIST_ALL_PORTS = "ListAllPorts";
 
     @Inject
     BroadcasterFactory factory;
@@ -48,14 +57,69 @@ public class AtmoserialService implements BroadcasterLifeCyclePolicyListener, Se
     }
 
     /**
-     * GET : Get the list of serial ports with their description and whether
+     * PUT : Get the list of serial ports with their description and whether
      * they are already open
      */
-    @Get
-    public String onGet(AtmosphereResource r) {
+    @Put
+    public void onPut(AtmosphereResource r) {
+        r.getBroadcaster().broadcast(getListOfPortsAsJson(), r);
+    }
+
+    @Ready
+    public void onReady(AtmosphereResource r) {
+        Map<String, String[]> params = new HashMap<String, String[]>();
+        params.putAll(r.getRequest().getParameterMap());
+        String commPort = getPortFromBroadcaster(r.getBroadcaster());
+        
+
+        if (getPortFromBroadcaster(r.getBroadcaster()).equals(LIST_ALL_PORTS)) {
+            r.getBroadcaster().broadcast(getListOfPortsAsJson(), r);
+        } else {
+            SerialPort port = SerialPort.getCommPort(commPort);
+            if (port == null) {
+                try {
+                    r.getResponse().sendError(404, "Serial port " + commPort + " does not exist");
+                    // Close the connection, as the port does not exist
+                    r.resume();
+                } catch (IOException e) {
+                    log.log(Level.WARNING, "Could not report non-existing CommPort to newly subscribed resource", e);
+                }
+            } else {
+                if (!params.containsKey("baud")) {
+                    params.put("baud", new String[] { "9600" });
+                }
+
+                if (port.isOpen()) {
+                    // If the port is open with different parameters than
+                    // requested,
+                    // send an exception
+                    if (broadcastedPort.getBaudRate() != Integer.valueOf(params.get("baud")[0])) {
+                        throw new IllegalStateException(
+                                "Port " + commPort + " is already open with different baud rate");
+                    }
+                } else {
+                    port.setBaudRate(Integer.valueOf(params.get("baud")[0]));
+                    port.openPort();
+                }
+
+                if (broadcastedPort == null) {
+                    broadcastedPort = port;
+                }
+            }
+        }
+
+    }
+
+    private static String getPortFromBroadcaster(Broadcaster b) {
+        return b.getID().substring(b.getID().lastIndexOf('/') + 1);
+    }
+
+    private String getListOfPortsAsJson() {
+        String result = "";
         List<PortInfo> portsResult = new ArrayList<>();
         for (SerialPort port : SerialPort.getCommPorts()) {
             PortInfo portInfo = new PortInfo();
+            portInfo.setSystemPortName(port.getSystemPortName());
             portInfo.setOpen(port.isOpen());
             portInfo.setDescriptivePortName(port.getDescriptivePortName());
             if (port.isOpen()) {
@@ -65,7 +129,6 @@ public class AtmoserialService implements BroadcasterLifeCyclePolicyListener, Se
             }
             portsResult.add(portInfo);
         }
-        String result = "";
         try {
             result = objectMapper.writeValueAsString(portsResult);
         } catch (JsonProcessingException e) {
@@ -82,29 +145,8 @@ public class AtmoserialService implements BroadcasterLifeCyclePolicyListener, Se
      * @param r
      */
     @Post
-    public void onPost(AtmosphereResource r, Broadcaster b) {
-        Map<String, String[]> params = r.getRequest().getParameterMap();
-        String commPort = b.getID().substring(b.getID().lastIndexOf('/') + 1);
-        SerialPort port = SerialPort.getCommPort(commPort);
-        
-        if(!params.containsKey("baud")){
-            params.put("baud", new String[]{"9600"});
-        }
-        
-        if (port.isOpen()) {
-            // If the port is open with different parameters than requested,
-            // send an exception
-            if(broadcastedPort.getBaudRate() != Integer.valueOf(params.get("baud")[0])){
-                throw new IllegalStateException("Port "+commPort+" is already open with different baud rate");
-            }
-        } else {
-            port.setBaudRate(Integer.valueOf(params.get("baud")[0]));
-            port.openPort();
-        }
+    public void onPost(AtmosphereResource r) {
 
-        if (broadcastedPort == null) {
-            broadcastedPort = port;
-        }
     }
 
     @Override
